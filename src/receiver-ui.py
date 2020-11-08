@@ -1,12 +1,55 @@
-import ipaddress, subprocess
+import ipaddress, subprocess, time
 from tkinter import *
 from tkinter import filedialog, messagebox
 from receiver import Receiver
+from threading import Thread
+
+
+def on_close_window():
+    global continue_polling
+    continue_polling = False
+    global continue_receiving
+    continue_receiving = False
+    root.destroy()
+
+
+def poll():
+    global continue_polling
+    continue_polling = True
+    while continue_polling:
+        time.sleep(5)
+        receiver.get_streams()
+
+
+def receive():
+    global continue_receiving
+    continue_receiving = True
+    while continue_receiving:
+        if receiver.pending_streams:
+            ip, port = receiver.consume_stream(receiver.pending_streams[0])
+            if ip and port:
+                continue_receiving = False
+                subprocess.Popen(
+                    [
+                        "ffplay",
+                        "-autoexit",
+                        "-v",
+                        "warning",
+                        "-stats",
+                        f"srt://{ip}:{port}?mode=listener",
+                    ]
+                )
 
 
 def register():
     receiver.display_name = display_name_entry.get()
     receiver.serial_number = serial_number_entry.get()
+    channel_port = channel_port_entry.get()
+    if not is_valid_port(channel_port):
+        messagebox.showerror("Error", "Invalid port.")
+        return
+    else:
+        receiver.channel_port = channel_port
     return_message = receiver.register()
     if return_message == "Decoder already registered!":
         messagebox.showerror("Error", return_message)
@@ -14,25 +57,9 @@ def register():
         messagebox.showinfo("Info", return_message)
 
 
-def receive():
-    ip = ip_entry.get()
-    port = port_entry.get()
-    if not is_valid_ip(ip):
-        messagebox.showerror("Error", "Invalid IP address.")
-        return
-    if not is_valid_port(port):
-        messagebox.showerror("Error", "Invalid port.")
-        return
-    subprocess.Popen(
-        [
-            "ffplay",
-            "-autoexit",
-            "-v",
-            "warning",
-            "-stats",
-            f"srt://{ip}:{port}?mode=listener",
-        ]
-    )
+def start():
+    Thread(target=poll).start()
+    Thread(target=receive).start()
 
 
 def is_valid_ip(ip):
@@ -77,6 +104,11 @@ serial_number_label = Label(
 )
 serial_number_entry = Entry(registration_label_frame, width=30, font=default_font)
 serial_number_entry.insert(0, receiver.serial_number)
+channel_port_label = Label(
+    registration_label_frame, text="Channel Port", width=20, font=default_font
+)
+channel_port_entry = Entry(registration_label_frame, width=30, font=default_font)
+channel_port_entry.insert(0, receiver.channel_port)
 register_button = Button(
     registration_label_frame,
     text="Register",
@@ -87,20 +119,14 @@ register_button = Button(
 )
 
 # Listening Instructions section elements
-listening_label_frame = LabelFrame(
-    root, text="Listening Instructions", font=default_font, borderwidth=4
-)
-ip_label = Label(listening_label_frame, text="IP", font=default_font, width=10)
-ip_entry = Entry(listening_label_frame, width=40, font=default_font)
-port_label = Label(listening_label_frame, text="Port", font=default_font, width=10)
-port_entry = Entry(listening_label_frame, width=40, font=default_font)
-receive_button = Button(
+listening_label_frame = LabelFrame(root, font=default_font, borderwidth=4)
+start_button = Button(
     listening_label_frame,
-    text="Receive",
+    text="Start",
     font=default_font,
     bg="#57A834",
     width=20,
-    command=receive,
+    command=start,
 )
 
 # Placing on grid
@@ -109,13 +135,11 @@ display_name_label.grid(row=0, column=0)
 display_name_entry.grid(row=0, column=1, pady=10)
 serial_number_label.grid(row=1, column=0)
 serial_number_entry.grid(row=1, column=1)
+channel_port_label.grid(row=2, column=0)
+channel_port_entry.grid(row=2, column=1, pady=10)
 register_button.grid(row=0, column=2, rowspan=2, padx=20, pady=5)
 listening_label_frame.pack(expand="yes", fill="both")
-ip_label.grid(row=0, column=0, pady=10)
-ip_entry.grid(row=0, column=1)
-port_label.grid(row=1, column=0)
-port_entry.grid(row=1, column=1)
-receive_button.grid(row=0, column=2, rowspan=2, padx=20, pady=5)
+start_button.place(relx=0.5, rely=0.5, anchor=CENTER)
 
-
+root.protocol("WM_DELETE_WINDOW", on_close_window)
 root.mainloop()
