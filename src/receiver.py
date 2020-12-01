@@ -72,7 +72,8 @@ class Receiver:
             stream = self.pending_streams.pop(0)
             ip = stream["outputChannel"]["encoder"]["device"]["privateIpAddress"]
             port = stream["inputChannel"]["channel"]["port"]
+            is_rendezvous = bool(stream["isRendezvous"])
             self.completed_streams.append(stream)
-            return (ip, port)
+            return (ip, port, is_rendezvous)
         else:
             return (None, None)

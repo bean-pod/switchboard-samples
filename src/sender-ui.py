@@ -3,6 +3,9 @@ from tkinter import *
 from tkinter import filedialog, messagebox
 from sender import Sender
 from threading import Thread
+from urllib.parse import urlunsplit, urlencode
+
+SRT_SCHEME = "srt"
 
 
 def on_close_window():
@@ -25,9 +28,18 @@ def send_file():
     global continue_sending
     continue_sending = True
     while continue_sending:
-        ip, port = sender.consume_stream()
-        if ip and port:
+        ip, port, is_rendezvous = sender.consume_stream()
+        if ip and port and is_rendezvous:
             time.sleep(3)
+            query_parameters = {
+                "pkt_size": "1316"
+            }
+
+            if is_rendezvous:
+                query_parameters["mode"] = "rendezvous"
+
+            query = urlencode(query_parameters)
+            url = urlunsplit((SRT_SCHEME, f"{ip}:{port}", "", query, ""))
             subprocess.Popen(
                 [
                     "ffmpeg",
@@ -38,10 +50,9 @@ def send_file():
                     "mpegts",
                     "-v",
                     "warning",
-                    f"srt://{ip}:{port}?pkt_size=1316",
+                    url,
                 ]
             )
-
 
 def send_cam():
     global continue_sending
@@ -138,7 +149,7 @@ def is_valid_port(port):
 root = Tk()
 root.title("Switchboard - Sample Sender")
 root.geometry("800x400")
-root.iconphoto(True, PhotoImage(file=r"public\bean.png"))
+root.iconphoto(True, PhotoImage(file=r"public/bean.png"))
 sender = Sender()
 default_font = ("TkDefaultFont", 12)
 
