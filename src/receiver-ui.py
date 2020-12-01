@@ -3,6 +3,9 @@ from tkinter import *
 from tkinter import filedialog, messagebox
 from receiver import Receiver
 from threading import Thread
+from urllib.parse import urlunsplit, urlencode
+
+SRT_SCHEME = "srt"
 
 
 def on_close_window():
@@ -30,14 +33,20 @@ def receive():
                 f"Pending Streams: {receiver.pending_streams}, Completed Streams: {receiver.completed_streams}"
             )
             stream_id = receiver.pending_streams.pop(0)
-            ip, port = receiver.consume_stream(stream_id)
-            if ip and port:
+            ip, port, is_rendezvous = receiver.consume_stream(stream_id)
+            if ip and port and is_rendezvous:
+                mode = "listener"
+                if is_rendezvous:
+                    mode = "rendezvous"
+
+                query = urlencode(dict(mode=mode))
+                url = urlunsplit((SRT_SCHEME, f"{ip}:{port}", "", query, ""))
                 subprocess.Popen(
                     [
                         "ffplay",
                         "-v",
                         "warning",
-                        f"srt://{ip}:{port}?mode=listener",
+                        url,
                     ]
                 )
             receiver.completed_streams.append(stream_id)
@@ -88,7 +97,7 @@ def is_valid_port(port):
 root = Tk()
 root.title("Switchboard - Sample Receiver")
 root.geometry("800x400")
-root.iconphoto(True, PhotoImage(file=r"public\bean.png"))
+root.iconphoto(True, PhotoImage(file=r"public/bean.png"))
 receiver = Receiver()
 default_font = ("TkDefaultFont", 12)
 

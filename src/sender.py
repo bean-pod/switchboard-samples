@@ -72,6 +72,7 @@ class Sender:
                     "privateIpAddress"
                 ]
                 port = stream_info["inputChannel"]["channel"]["port"]
-                return (ip, port)
+                is_rendezvous = stream_info["mode"]
+                return (ip, port, is_rendezvous)
             else:
                 return (None, None)

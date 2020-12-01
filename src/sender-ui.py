@@ -3,6 +3,9 @@ from tkinter import *
 from tkinter import filedialog, messagebox
 from sender import Sender
 from threading import Thread
+from urllib.parse import urlunsplit, urlencode
+
+SRT_SCHEME = "srt"
 
 
 def on_close_window():
@@ -30,8 +33,17 @@ def send_file():
                 f"Pending Streams: {sender.pending_streams}, Completed Streams: {sender.completed_streams}"
             )
             stream_id = sender.pending_streams.pop(0)
-            ip, port = sender.consume_stream(stream_id)
-            if ip and port:
+            ip, port, is_rendezvous = sender.consume_stream(stream_id)
+            if ip and port and is_rendezvous:
+                query_parameters = {
+                    "pkt_size": "1316"
+                }
+
+                if is_rendezvous:
+                    query_parameters["mode"] = "rendezvous"
+
+                query = urlencode(query_parameters)
+                url = urlunsplit((SRT_SCHEME, f"{ip}:{port}", "", query, ""))
                 # To give time for receiver to start
                 # Need to find a more elegant solution in the future
                 time.sleep(3)
@@ -45,7 +57,7 @@ def send_file():
                         "mpegts",
                         "-v",
                         "warning",
-                        f"srt://{ip}:{port}?pkt_size=1316",
+                        url,
                     ]
                 )
             sender.completed_streams.append(stream_id)
@@ -152,7 +164,7 @@ def is_valid_port(port):
 root = Tk()
 root.title("Switchboard - Sample Sender")
 root.geometry("800x400")
-root.iconphoto(True, PhotoImage(file=r"public\bean.png"))
+root.iconphoto(True, PhotoImage(file=r"public/bean.png"))
 sender = Sender()
 default_font = ("TkDefaultFont", 12)
 

@@ -72,6 +72,7 @@ class Receiver:
                     "privateIpAddress"
                 ]
                 port = stream_info["inputChannel"]["channel"]["port"]
-                return (ip, port)
+                is_rendezvous = bool(stream_info["isRendezvous"])
+                return (ip, port, is_rendezvous)
             else:
                 return (None, None)
