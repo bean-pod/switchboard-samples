@@ -34,7 +34,7 @@ def send_file():
             )
             stream_id = sender.pending_streams.pop(0)
             ip, port, is_rendezvous = sender.consume_stream(stream_id)
-            if ip and port and is_rendezvous:
+            if ip and port:
                 query_parameters = {
                     "pkt_size": "1316"
                 }
@@ -43,10 +43,15 @@ def send_file():
                     query_parameters["mode"] = "rendezvous"
 
                 query = urlencode(query_parameters)
-                url = urlunsplit((SRT_SCHEME, f"{ip}:{port}", "", query, ""))
                 # To give time for receiver to start
                 # Need to find a more elegant solution in the future
                 time.sleep(3)
+                if ':' in ip:
+                    url = urlunsplit((SRT_SCHEME, f"[{ip}]:{port}", "", query, ""))
+                else:
+                    url = urlunsplit((SRT_SCHEME, f"{ip}:{port}", "", query, ""))
+
+                print(f'sending to {url}')
                 subprocess.Popen(
                     [
                         "ffmpeg",

@@ -34,13 +34,19 @@ def receive():
             )
             stream_id = receiver.pending_streams.pop(0)
             ip, port, is_rendezvous = receiver.consume_stream(stream_id)
-            if ip and port and is_rendezvous:
+            if ip and port:
                 mode = "listener"
                 if is_rendezvous:
                     mode = "rendezvous"
 
                 query = urlencode(dict(mode=mode))
-                url = urlunsplit((SRT_SCHEME, f"{ip}:{port}", "", query, ""))
+
+                if ':' in ip:
+                    url = urlunsplit((SRT_SCHEME, f"[{ip}]:{port}", "", query, ""))
+                else:
+                    url = urlunsplit((SRT_SCHEME, f"{ip}:{port}", "", query, ""))
+
+                print(f'opening to {url}')
                 subprocess.Popen(
                     [
                         "ffplay",
