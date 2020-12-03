@@ -39,7 +39,14 @@ def send_file():
                 query_parameters["mode"] = "rendezvous"
 
             query = urlencode(query_parameters)
-            url = urlunsplit((SRT_SCHEME, f"{ip}:{port}", "", query, ""))
+
+            if ':' in ip:
+                url = urlunsplit((SRT_SCHEME, f"[{ip}]:{port}", "", query, ""))
+            else:
+                url = urlunsplit((SRT_SCHEME, f"{ip}:{port}", "", query, ""))
+
+            print(f'sending to {url}')
+
             subprocess.Popen(
                 [
                     "ffmpeg",

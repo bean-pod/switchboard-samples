@@ -35,7 +35,14 @@ def receive():
                 mode = "rendezvous"
 
             query = urlencode(dict(mode=mode))
-            url = urlunsplit((SRT_SCHEME, f"{ip}:{port}", "", query, ""))
+
+            if ':' in ip:
+                url = urlunsplit((SRT_SCHEME, f"[{ip}]:{port}", "", query, ""))
+            else:
+                url = urlunsplit((SRT_SCHEME, f"{ip}:{port}", "", query, ""))
+
+            print(f'opening to {url}')
+
             subprocess.Popen(
                 [
                     "ffplay",
