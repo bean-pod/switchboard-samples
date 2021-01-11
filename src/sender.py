@@ -30,7 +30,7 @@ class Sender:
         if response.status_code == 404:
             device_payload = {
                 "serialNumber": self.serial_number,
-                "ipAddress": "127.0.0.1",
+                "privateIpAddress": "127.0.0.1",
                 "displayName": self.display_name,
                 "status": "Running",
             }
@@ -68,8 +68,10 @@ class Sender:
                 stream_info["outputChannel"]["encoder"]["serialNumber"]
                 == self.serial_number
             ):
-                ip = stream_info["inputChannel"]["decoder"]["device"]["ipAddress"]
-                port = stream_info["inputChannel"]["port"]
+                ip = stream_info["inputChannel"]["decoder"]["device"][
+                    "privateIpAddress"
+                ]
+                port = stream_info["inputChannel"]["channel"]["port"]
                 return (ip, port)
             else:
                 return (None, None)
