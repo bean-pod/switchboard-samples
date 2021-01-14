@@ -76,4 +76,4 @@ class Receiver:
             self.completed_streams.append(stream)
             return (ip, port, is_rendezvous)
         else:
-            return (None, None)
+            return (None, None, None)
