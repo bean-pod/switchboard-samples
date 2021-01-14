@@ -25,33 +25,26 @@ def poll():
         sender.get_streams()
 
 
-def send_file():
+def send(use_webcam: bool):
     global continue_sending
     continue_sending = True
+    with open("config.json") as json_config:
+        config = json.load(json_config)
+    webcam = config["camera"]["name"]
     while continue_sending:
         if sender.pending_streams:
-            print(
-                f"Pending Streams: {sender.pending_streams}, Completed Streams: {sender.completed_streams}"
-            )
+            print(f"Pending Streams: {sender.pending_streams}, Completed Streams: {sender.completed_streams}")
+
             stream_id = sender.pending_streams.pop(0)
             ip, port, is_rendezvous = sender.consume_stream(stream_id)
             if ip and port:
                 # To give time for receiver to start
                 # Need to find a more elegant solution in the future
                 time.sleep(3)
-                subprocess.Popen(
-                    [
-                        "ffmpeg",
-                        "-re",
-                        "-i",
-                        choose_file_entry.get(),
-                        "-f",
-                        "mpegts",
-                        "-v",
-                        "warning",
-                        f"{UDP_SCHEME}://{LOCAL_HOST}:{INTERNAL_PORT}?pkt_size=1316",
-                    ]
-                )
+                if use_webcam:
+                    start_ffmpeg_webcam(webcam)
+                else:
+                    start_ffmpeg_file()
 
                 if is_rendezvous:
                     srt_url = f"{SRT_SCHEME}://{ip}:{port}?mode=rendezvous"
@@ -68,38 +61,37 @@ def send_file():
             sender.completed_streams.append(stream_id)
 
 
-def send_cam():
-    global continue_sending
-    continue_sending = True
-    with open("config.json") as json_config:
-        config = json.load(json_config)
-    webcam = config["camera"]["name"]
-    while continue_sending:
-        if sender.pending_streams:
-            print(
-                f"Pending Streams: {sender.pending_streams}, Completed Streams: {sender.completed_streams}"
-            )
-            stream_id = sender.pending_streams.pop(0)
-            ip, port = sender.consume_stream(stream_id)
-            if ip and port:
-                # To give time for receiver to start
-                # Need to find a more elegant solution in the future
-                time.sleep(3)
-                subprocess.Popen(
-                    [
-                        "ffmpeg",
-                        "-f",
-                        "dshow",
-                        "-i",
-                        f"video={webcam}",
-                        "-f",
-                        "mpegts",
-                        "-v",
-                        "warning",
-                        f"srt://{ip}:{port}?pkt_size=1316",
-                    ]
-                )
-            sender.completed_streams.append(stream_id)
+def start_ffmpeg_file():
+    subprocess.Popen(
+        [
+            "ffmpeg",
+            "-re",
+            "-i",
+            choose_file_entry.get(),
+            "-f",
+            "mpegts",
+            "-v",
+            "warning",
+            f"{UDP_SCHEME}://{LOCAL_HOST}:{INTERNAL_PORT}?pkt_size=1316",
+        ]
+    )
+
+
+def start_ffmpeg_webcam(webcam: str):
+    subprocess.Popen(
+        [
+            "ffmpeg",
+            "-f",
+            "dshow",
+            "-i",
+            f"video={webcam}",
+            "-f",
+            "mpegts",
+            "-v",
+            "warning",
+            f"{UDP_SCHEME}://{LOCAL_HOST}:{INTERNAL_PORT}?pkt_size=1316",
+        ]
+    )
 
 
 def register():
@@ -128,14 +120,14 @@ def browse():
 def start():
     if camera_selection.get() == 1:
         Thread(target=poll).start()
-        Thread(target=send_cam).start()
+        Thread(target=send, args=(True,)).start()
     else:
         input_file = choose_file_entry.get()
         if not is_valid_file(input_file):
             messagebox.showerror("Error", "Invalid file type.")
             return
         Thread(target=poll).start()
-        Thread(target=send_file).start()
+        Thread(target=send, args=(False,)).start()
 
 
 def is_valid_file(input_file):

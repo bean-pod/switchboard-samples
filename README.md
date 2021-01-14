@@ -5,6 +5,7 @@ https://github.com/felixlapierre/switchboard
 # Requirements
 * [Python](https://www.python.org) 3.7.3+
 * [ffmpeg](https://ffmpeg.org) 4.1.6+
+* [srt-live-transmit](https://github.com/Haivision/srt) 1.4.2+ 
 
 # Usage
 1. Create your virtual environment and install the required packages  
