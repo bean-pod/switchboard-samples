@@ -3,9 +3,11 @@ from tkinter import *
 from tkinter import filedialog, messagebox
 from receiver import Receiver
 from threading import Thread
-from urllib.parse import urlunsplit, urlencode
 
 SRT_SCHEME = "srt"
+UDP_SCHEME = "udp"
+LOCAL_HOST = "127.0.0.1"
+INTERNAL_PORT = 5000
 
 
 def on_close_window():
@@ -35,26 +37,27 @@ def receive():
             stream_id = receiver.pending_streams.pop(0)
             ip, port, is_rendezvous = receiver.consume_stream(stream_id)
             if ip and port:
-                mode = "listener"
-                if is_rendezvous:
-                    mode = "rendezvous"
-
-                query = urlencode(dict(mode=mode))
-
-                if ':' in ip:
-                    url = urlunsplit((SRT_SCHEME, f"[{ip}]:{port}", "", query, ""))
-                else:
-                    url = urlunsplit((SRT_SCHEME, f"{ip}:{port}", "", query, ""))
-
-                print(f'opening to {url}')
                 subprocess.Popen(
                     [
                         "ffplay",
                         "-v",
                         "warning",
-                        url,
+                        f"{UDP_SCHEME}://{LOCAL_HOST}:{INTERNAL_PORT}",
                     ]
                 )
+
+            if is_rendezvous:
+                srt_url = f"{SRT_SCHEME}://{ip}:{port}?mode=rendezvous"
+            else:
+                srt_url = f"{SRT_SCHEME}://{ip}:{port}?mode=listener"
+
+            subprocess.Popen(
+                [
+                    "srt-live-transmit",
+                    f"udp://{LOCAL_HOST}:{INTERNAL_PORT}",
+                    srt_url
+                ]
+            )
             receiver.completed_streams.append(stream_id)
 
 

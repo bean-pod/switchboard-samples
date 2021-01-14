@@ -3,10 +3,11 @@ from tkinter import *
 from tkinter import filedialog, messagebox
 from sender import Sender
 from threading import Thread
-from urllib.parse import urlunsplit, urlencode
 
 SRT_SCHEME = "srt"
-
+UDP_SCHEME = "udp"
+LOCAL_HOST = "127.0.0.1"
+INTERNAL_PORT = 5000
 
 def on_close_window():
     global continue_polling
@@ -35,23 +36,9 @@ def send_file():
             stream_id = sender.pending_streams.pop(0)
             ip, port, is_rendezvous = sender.consume_stream(stream_id)
             if ip and port:
-                query_parameters = {
-                    "pkt_size": "1316"
-                }
-
-                if is_rendezvous:
-                    query_parameters["mode"] = "rendezvous"
-
-                query = urlencode(query_parameters)
                 # To give time for receiver to start
                 # Need to find a more elegant solution in the future
                 time.sleep(3)
-                if ':' in ip:
-                    url = urlunsplit((SRT_SCHEME, f"[{ip}]:{port}", "", query, ""))
-                else:
-                    url = urlunsplit((SRT_SCHEME, f"{ip}:{port}", "", query, ""))
-
-                print(f'sending to {url}')
                 subprocess.Popen(
                     [
                         "ffmpeg",
@@ -62,7 +49,20 @@ def send_file():
                         "mpegts",
                         "-v",
                         "warning",
-                        url,
+                        f"{UDP_SCHEME}://{LOCAL_HOST}:{INTERNAL_PORT}?pkt_size=1316",
+                    ]
+                )
+
+                if is_rendezvous:
+                    srt_url = f"{SRT_SCHEME}://{ip}:{port}?mode=rendezvous"
+                else:
+                    srt_url = f"{SRT_SCHEME}://{ip}:{port}"
+
+                subprocess.Popen(
+                    [
+                        "srt-live-transmit",
+                        f"udp://{LOCAL_HOST}:{INTERNAL_PORT}",
+                        srt_url
                     ]
                 )
             sender.completed_streams.append(stream_id)
