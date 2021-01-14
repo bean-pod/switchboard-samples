@@ -70,7 +70,7 @@ class Receiver:
     def consume_stream(self):
         if self.pending_streams:
             stream = self.pending_streams.pop(0)
-            ip = stream["outputChannel"]["encoder"]["device"]["privateIpAddress"]
+            ip = stream["outputChannel"]["encoder"]["device"]["publicIpAddress"]
             port = stream["inputChannel"]["channel"]["port"]
             is_rendezvous = bool(stream["isRendezvous"])
             self.completed_streams.append(stream)

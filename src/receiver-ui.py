@@ -49,8 +49,8 @@ def receive():
             subprocess.Popen(
                 [
                     "srt-live-transmit",
-                    f"udp://{LOCAL_HOST}:{INTERNAL_PORT}",
-                    srt_url
+                    srt_url,
+                    f"udp://{LOCAL_HOST}:{INTERNAL_PORT}"
                 ]
             )
 
