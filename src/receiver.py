@@ -69,7 +69,7 @@ class Receiver:
                 == self.serial_number
             ):
                 ip = stream_info["outputChannel"]["encoder"]["device"][
-                    "privateIpAddress"
+                    "publicIpAddress"
                 ]
                 port = stream_info["inputChannel"]["port"]
                 is_rendezvous = bool(stream_info["isRendezvous"])
