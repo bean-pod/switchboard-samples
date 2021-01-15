@@ -1,13 +1,12 @@
 import ipaddress, subprocess, time, json
 from tkinter import *
 from tkinter import filedialog, messagebox
+from constants import SRT_SCHEME, LOCAL_HOST, UDP_SCHEME
 from sender import Sender
 from threading import Thread
 
-SRT_SCHEME = "srt"
-UDP_SCHEME = "udp"
-LOCAL_HOST = "127.0.0.1"
-INTERNAL_PORT = 5000
+INTERNAL_PORT = 5002
+
 
 def on_close_window():
     global continue_polling

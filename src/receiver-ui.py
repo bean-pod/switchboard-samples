@@ -3,11 +3,9 @@ from tkinter import *
 from tkinter import filedialog, messagebox
 from receiver import Receiver
 from threading import Thread
+from constants import UDP_SCHEME, LOCAL_HOST, SRT_SCHEME
 
-SRT_SCHEME = "srt"
-UDP_SCHEME = "udp"
-LOCAL_HOST = "127.0.0.1"
-INTERNAL_PORT = 5000
+INTERNAL_PORT = 5001
 
 
 def on_close_window():
