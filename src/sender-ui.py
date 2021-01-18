@@ -34,25 +34,29 @@ def send(use_webcam: bool):
         ip, port, is_rendezvous = sender.consume_stream()
         if ip and port and is_rendezvous:
             time.sleep(3)
-            if use_webcam:
-                start_ffmpeg_webcam(webcam)
-            else:
-                start_ffmpeg_file()
-
             if is_rendezvous:
-                srt_url = f"{SRT_SCHEME}://{ip}:{port}?mode=rendezvous"
+                ffmpeg_url = f"{UDP_SCHEME}://{LOCAL_HOST}:{INTERNAL_PORT}?pkt_size=1316"
+                start_ffmpeg(use_webcam, webcam, ffmpeg_url)
+
+                subprocess.Popen(
+                    [
+                        "srt-live-transmit",
+                        f"{UDP_SCHEME}://{LOCAL_HOST}:{INTERNAL_PORT}",
+                        f"{SRT_SCHEME}://{ip}:{port}?mode=rendezvous"
+                    ]
+                )
             else:
-                srt_url = f"{SRT_SCHEME}://{ip}:{port}"
+                ffmpeg_url = f"{SRT_SCHEME}://{ip}:{port}?pkt_size=1316"
+                start_ffmpeg(use_webcam, webcam, ffmpeg_url)
 
-            subprocess.Popen(
-                [
-                    "srt-live-transmit",
-                    f"udp://{LOCAL_HOST}:{INTERNAL_PORT}",
-                    srt_url
-                ]
-            )
+def start_ffmpeg(use_webcam: bool, webcam: str, ffmpeg_url: str):
+    if use_webcam:
+        start_ffmpeg_webcam(webcam, ffmpeg_url)
+    else:
+        start_ffmpeg_file(ffmpeg_url)
 
-def start_ffmpeg_file():
+
+def start_ffmpeg_file(url: str):
     subprocess.Popen(
         [
             "ffmpeg",
@@ -68,7 +72,7 @@ def start_ffmpeg_file():
     )
 
 
-def start_ffmpeg_webcam(webcam: str):
+def start_ffmpeg_webcam(webcam: str, url: str):
     subprocess.Popen(
         [
             "ffmpeg",

@@ -30,27 +30,33 @@ def receive():
     while continue_receiving:
         ip, port, is_rendezvous = receiver.consume_stream()
         if ip and port and is_rendezvous:
-            subprocess.Popen(
+            time.sleep(3)
+            if is_rendezvous:
+                subprocess.Popen(
                     [
                         "ffplay",
                         "-v",
                         "warning",
                         f"{UDP_SCHEME}://{LOCAL_HOST}:{INTERNAL_PORT}",
                     ]
-            )
+                )
 
-            if is_rendezvous:
-                srt_url = f"{SRT_SCHEME}://{ip}:{port}?mode=rendezvous"
+                subprocess.Popen(
+                    [
+                        "srt-live-transmit",
+                        f"{SRT_SCHEME}://{ip}:{port}?mode=rendezvous",
+                        f"{UDP_SCHEME}://{LOCAL_HOST}:{INTERNAL_PORT}"
+                    ]
+                )
             else:
-                srt_url = f"{SRT_SCHEME}://{ip}:{port}?mode=listener"
-
-            subprocess.Popen(
-                [
-                    "srt-live-transmit",
-                    srt_url,
-                    f"udp://{LOCAL_HOST}:{INTERNAL_PORT}"
-                ]
-            )
+                subprocess.Popen(
+                    [
+                        "ffplay",
+                        "-v",
+                        "warning",
+                        f"{SRT_SCHEME}://{ip}:{port}?mode=listener",
+                    ]
+                )
 
 
 def register():
