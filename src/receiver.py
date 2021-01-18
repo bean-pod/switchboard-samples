@@ -67,7 +67,7 @@ class Receiver:
                 if new_stream_found:
                     self.pending_streams.append(stream)
 
-    def consume_stream(self):
+    def consume_stream(self) -> (str, str, bool):
         if self.pending_streams:
             stream = self.pending_streams.pop(0)
             ip = stream["outputChannel"]["encoder"]["device"]["publicIpAddress"]
