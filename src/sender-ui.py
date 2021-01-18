@@ -35,9 +35,6 @@ def send(use_webcam: bool):
         if ip and port and is_rendezvous:
             time.sleep(3)
             if is_rendezvous:
-                ffmpeg_url = f"{UDP_SCHEME}://{LOCAL_HOST}:{INTERNAL_PORT}?pkt_size=1316"
-                start_ffmpeg(use_webcam, webcam, ffmpeg_url)
-
                 subprocess.Popen(
                     [
                         "srt-live-transmit",
@@ -45,6 +42,9 @@ def send(use_webcam: bool):
                         f"{SRT_SCHEME}://{ip}:{port}?mode=rendezvous"
                     ]
                 )
+
+                ffmpeg_url = f"{UDP_SCHEME}://{LOCAL_HOST}:{INTERNAL_PORT}?pkt_size=1316"
+                start_ffmpeg(use_webcam, webcam, ffmpeg_url)
             else:
                 ffmpeg_url = f"{SRT_SCHEME}://{ip}:{port}?pkt_size=1316"
                 start_ffmpeg(use_webcam, webcam, ffmpeg_url)
