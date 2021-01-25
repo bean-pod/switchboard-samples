@@ -72,7 +72,7 @@ class Sender:
             stream = self.pending_streams.pop(0)
             ip = stream["inputChannel"]["decoder"]["device"]["publicIpAddress"]
             port = stream["inputChannel"]["channel"]["port"]
-            is_rendezvous = stream["mode"]
+            is_rendezvous = bool(stream["isRendezvous"])
             self.completed_streams.append(stream)
             return (ip, port, is_rendezvous)
         else:
