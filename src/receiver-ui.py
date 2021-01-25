@@ -3,6 +3,9 @@ from tkinter import *
 from tkinter import filedialog, messagebox
 from receiver import Receiver
 from threading import Thread
+from constants import UDP_SCHEME, LOCAL_HOST, SRT_SCHEME
+
+INTERNAL_PORT = 5001
 
 
 def on_close_window():
@@ -25,16 +28,35 @@ def receive():
     global continue_receiving
     continue_receiving = True
     while continue_receiving:
-        ip, port = receiver.consume_stream()
+        ip, port, is_rendezvous = receiver.consume_stream()
+        time.sleep(0.05)
         if ip and port:
-            subprocess.Popen(
-                [
-                    "ffplay",
-                    "-v",
-                    "warning",
-                    f"srt://{ip}:{port}?mode=listener",
-                ]
-            )
+            if is_rendezvous:
+                subprocess.Popen(
+                    [
+                        "srt-live-transmit",
+                        f"{SRT_SCHEME}://{ip}:{port}?mode=rendezvous",
+                        f"{UDP_SCHEME}://{LOCAL_HOST}:{INTERNAL_PORT}"
+                    ]
+                )
+
+                subprocess.Popen(
+                    [
+                        "ffplay",
+                        "-v",
+                        "warning",
+                        f"{UDP_SCHEME}://{LOCAL_HOST}:{INTERNAL_PORT}",
+                    ]
+                )
+            else:
+                subprocess.Popen(
+                    [
+                        "ffplay",
+                        "-v",
+                        "warning",
+                        f"{SRT_SCHEME}://{ip}:{port}?mode=listener",
+                    ]
+                )
 
 
 def register():
@@ -82,7 +104,7 @@ def is_valid_port(port):
 root = Tk()
 root.title("Switchboard - Sample Receiver")
 root.geometry("800x400")
-root.iconphoto(True, PhotoImage(file=r"public\bean.png"))
+root.iconphoto(True, PhotoImage(file=r"public/bean.png"))
 receiver = Receiver()
 default_font = ("TkDefaultFont", 12)
 

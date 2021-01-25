@@ -1,8 +1,11 @@
 import ipaddress, subprocess, time, json
 from tkinter import *
 from tkinter import filedialog, messagebox
+from constants import SRT_SCHEME, LOCAL_HOST, UDP_SCHEME
 from sender import Sender
 from threading import Thread
+
+INTERNAL_PORT = 5002
 
 
 def on_close_window():
@@ -21,54 +24,70 @@ def poll():
         sender.get_streams()
 
 
-def send_file():
-    global continue_sending
-    continue_sending = True
-    while continue_sending:
-        ip, port = sender.consume_stream()
-        if ip and port:
-            time.sleep(3)
-            subprocess.Popen(
-                [
-                    "ffmpeg",
-                    "-re",
-                    "-i",
-                    choose_file_entry.get(),
-                    "-f",
-                    "mpegts",
-                    "-v",
-                    "warning",
-                    f"srt://{ip}:{port}?pkt_size=1316",
-                ]
-            )
-
-
-def send_cam():
+def send(use_webcam: bool):
     global continue_sending
     continue_sending = True
     with open("config.json") as json_config:
         config = json.load(json_config)
     webcam = config["camera"]["name"]
     while continue_sending:
-        ip, port = sender.consume_stream()
+        ip, port, is_rendezvous = sender.consume_stream()
+        time.sleep(0.05)
         if ip and port:
-            # To give time for receiver to start
-            # Need to find a more elegant solution in the future
             time.sleep(3)
-            subprocess.Popen(
-                [
-                    "ffmpeg",
-                    "-f",
-                    "dshow",
-                    "-i",
-                    f"video={webcam}",
-                    "-f",
-                    "mpegts",
-                    "-v",
-                    "warning",
-                    f"srt://{ip}:{port}?pkt_size=1316",
-                ]
-            )
+            if is_rendezvous:
+                subprocess.Popen(
+                    [
+                        "srt-live-transmit",
+                        f"{UDP_SCHEME}://{LOCAL_HOST}:{INTERNAL_PORT}",
+                        f"{SRT_SCHEME}://{ip}:{port}?mode=rendezvous"
+                    ]
+                )
+
+                ffmpeg_url = f"{UDP_SCHEME}://{LOCAL_HOST}:{INTERNAL_PORT}?pkt_size=1316"
+                start_ffmpeg(use_webcam, webcam, ffmpeg_url)
+            else:
+                ffmpeg_url = f"{SRT_SCHEME}://{ip}:{port}?pkt_size=1316"
+                start_ffmpeg(use_webcam, webcam, ffmpeg_url)
+
+def start_ffmpeg(use_webcam: bool, webcam: str, ffmpeg_url: str):
+    if use_webcam:
+        start_ffmpeg_webcam(webcam, ffmpeg_url)
+    else:
+        start_ffmpeg_file(ffmpeg_url)
+
+
+def start_ffmpeg_file(url: str):
+    subprocess.Popen(
+        [
+            "ffmpeg",
+            "-re",
+            "-i",
+            choose_file_entry.get(),
+            "-f",
+            "mpegts",
+            "-v",
+            "warning",
+            f"{UDP_SCHEME}://{LOCAL_HOST}:{INTERNAL_PORT}?pkt_size=1316",
+        ]
+    )
+
+
+def start_ffmpeg_webcam(webcam: str, url: str):
+    subprocess.Popen(
+        [
+            "ffmpeg",
+            "-f",
+            "dshow",
+            "-i",
+            f"video={webcam}",
+            "-f",
+            "mpegts",
+            "-v",
+            "warning",
+            f"{UDP_SCHEME}://{LOCAL_HOST}:{INTERNAL_PORT}?pkt_size=1316",
+        ]
+    )
 
 
 def register():
@@ -97,14 +116,14 @@ def browse():
 def start():
     if camera_selection.get() == 1:
         Thread(target=poll).start()
-        Thread(target=send_cam).start()
+        Thread(target=send, args=(True,)).start()
     else:
         input_file = choose_file_entry.get()
         if not is_valid_file(input_file):
             messagebox.showerror("Error", "Invalid file type.")
             return
         Thread(target=poll).start()
-        Thread(target=send_file).start()
+        Thread(target=send, args=(False,)).start()
 
 
 def is_valid_file(input_file):
@@ -138,7 +157,7 @@ def is_valid_port(port):
 root = Tk()
 root.title("Switchboard - Sample Sender")
 root.geometry("800x400")
-root.iconphoto(True, PhotoImage(file=r"public\bean.png"))
+root.iconphoto(True, PhotoImage(file=r"public/bean.png"))
 sender = Sender()
 default_font = ("TkDefaultFont", 12)
 
