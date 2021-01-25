@@ -32,7 +32,8 @@ def send(use_webcam: bool):
     webcam = config["camera"]["name"]
     while continue_sending:
         ip, port, is_rendezvous = sender.consume_stream()
-        if ip and port and is_rendezvous:
+        time.sleep(0.05)
+        if ip and port:
             time.sleep(3)
             if is_rendezvous:
                 subprocess.Popen(
