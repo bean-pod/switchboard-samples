@@ -5,7 +5,7 @@ from receiver import Receiver
 from threading import Thread
 from constants import UDP_SCHEME, LOCAL_HOST, SRT_SCHEME
 
-INTERNAL_PORT = 5001
+INTERNAL_PORT = 5000
 
 
 def on_close_window():
@@ -52,6 +52,7 @@ def receive():
                         ]
                     ),
                 )
+                INTERNAL_PORT += 1
             else:
                 receiver.processes[stream_id] = [
                     subprocess.Popen(
@@ -88,12 +89,14 @@ def check_status():
 def register():
     receiver.display_name = display_name_entry.get()
     receiver.serial_number = serial_number_entry.get()
-    channel_port = channel_port_entry.get()
-    if not is_valid_port(channel_port):
+    channel_1_port = channel_1_port_entry.get()
+    channel_2_port = channel_2_port_entry.get()
+    if not is_valid_port(channel_1_port) or not is_valid_port(channel_2_port):
         messagebox.showerror("Error", "Invalid port.")
         return
     else:
-        receiver.channel_port = channel_port
+        receiver.channel_1_port = channel_1_port
+        receiver.channel_2_port = channel_2_port
     return_message = receiver.register()
     if return_message == "Decoder already registered!":
         messagebox.showerror("Error", return_message)
@@ -135,9 +138,7 @@ receiver = Receiver()
 default_font = ("TkDefaultFont", 12)
 
 # Registration section elements
-registration_label_frame = LabelFrame(
-    root, text="Registration", font=default_font, borderwidth=4
-)
+registration_label_frame = LabelFrame(root, text="Registration", font=default_font, borderwidth=4)
 display_name_label = Label(
     registration_label_frame, text="Display Name", font=default_font, width=20
 )
@@ -148,11 +149,16 @@ serial_number_label = Label(
 )
 serial_number_entry = Entry(registration_label_frame, width=30, font=default_font)
 serial_number_entry.insert(0, receiver.serial_number)
-channel_port_label = Label(
-    registration_label_frame, text="Channel Port", width=20, font=default_font
+channel_1_port_label = Label(
+    registration_label_frame, text="Channel 1 Port", width=20, font=default_font
 )
-channel_port_entry = Entry(registration_label_frame, width=30, font=default_font)
-channel_port_entry.insert(0, receiver.channel_port)
+channel_1_port_entry = Entry(registration_label_frame, width=30, font=default_font)
+channel_1_port_entry.insert(0, receiver.channel_1_port)
+channel_2_port_label = Label(
+    registration_label_frame, text="Channel 2 Port", width=20, font=default_font
+)
+channel_2_port_entry = Entry(registration_label_frame, width=30, font=default_font)
+channel_2_port_entry.insert(0, receiver.channel_2_port)
 register_button = Button(
     registration_label_frame,
     text="Register",
@@ -179,8 +185,10 @@ display_name_label.grid(row=0, column=0)
 display_name_entry.grid(row=0, column=1, pady=10)
 serial_number_label.grid(row=1, column=0)
 serial_number_entry.grid(row=1, column=1)
-channel_port_label.grid(row=2, column=0)
-channel_port_entry.grid(row=2, column=1, pady=10)
+channel_1_port_label.grid(row=2, column=0)
+channel_1_port_entry.grid(row=2, column=1, pady=10)
+channel_2_port_label.grid(row=3, column=0)
+channel_2_port_entry.grid(row=3, column=1)
 register_button.grid(row=0, column=2, rowspan=2, padx=20, pady=5)
 listening_label_frame.pack(expand="yes", fill="both")
 start_button.place(relx=0.5, rely=0.5, anchor=CENTER)
